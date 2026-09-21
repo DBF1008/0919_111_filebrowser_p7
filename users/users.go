@@ -54,9 +54,10 @@ var checkableFields = []string{
 	"Rules",
 }
 
-// Clean cleans up a user and verifies if all its fields
-// are alright to be saved.
-func (u *User) Clean(baseScope string, fields ...string) error {
+// Validate verifies if the user's fields are alright to be
+// saved, filling in default values for the empty ones. If no
+// fields are given, all checkable fields are validated.
+func (u *User) Validate(fields ...string) error {
 	if len(fields) == 0 {
 		fields = checkableFields
 	}
@@ -90,6 +91,13 @@ func (u *User) Clean(baseScope string, fields ...string) error {
 		}
 	}
 
+	return nil
+}
+
+// Init initializes the user's filesystem based on its scope. If
+// the filesystem has already been set, it is left untouched so
+// an explicitly provided Fs is never overwritten.
+func (u *User) Init(baseScope string) error {
 	if u.Fs == nil {
 		scope := u.Scope
 		scope = filepath.Join(baseScope, filepath.Join("/", scope))
@@ -97,6 +105,17 @@ func (u *User) Clean(baseScope string, fields ...string) error {
 	}
 
 	return nil
+}
+
+// Clean cleans up a user and verifies if all its fields
+// are alright to be saved. It is the combination of the
+// Validate and Init phases.
+func (u *User) Clean(baseScope string, fields ...string) error {
+	if err := u.Validate(fields...); err != nil {
+		return err
+	}
+
+	return u.Init(baseScope)
 }
 
 // FullPath gets the full path for a user's relative path.

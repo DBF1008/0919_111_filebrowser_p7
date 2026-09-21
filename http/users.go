@@ -144,7 +144,7 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 	}
 
 	if len(req.Which) != 0 {
-		return http.StatusBadRequest, nil
+		return http.StatusBadRequest, fberrors.ErrInvalidRequestParams
 	}
 
 	if req.Data.Password == "" {
@@ -170,7 +170,7 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 
 	err = d.store.Users.Save(req.Data)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return errToStatus(err), err
 	}
 
 	w.Header().Set("Location", "/settings/users/"+strconv.FormatUint(uint64(req.Data.ID), 10))
@@ -205,7 +205,7 @@ var userPutHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request
 	}
 
 	if req.Data.ID != d.raw.(uint) {
-		return http.StatusBadRequest, nil
+		return http.StatusBadRequest, fberrors.ErrInvalidRequestParams
 	}
 
 	for _, field := range req.Which {
@@ -262,7 +262,7 @@ var userPutHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request
 
 	err = d.store.Users.Update(req.Data, req.Which...)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return errToStatus(err), err
 	}
 
 	return http.StatusOK, nil
