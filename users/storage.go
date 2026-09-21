@@ -50,9 +50,10 @@ func (s *Storage) Get(baseScope string, id interface{}) (user *User, err error) 
 	if err != nil {
 		return
 	}
-	if err := user.Clean(baseScope); err != nil {
+	if err := user.Validate(); err != nil {
 		return nil, err
 	}
+	user.Init(baseScope)
 	return
 }
 
@@ -64,9 +65,10 @@ func (s *Storage) Gets(baseScope string) ([]*User, error) {
 	}
 
 	for _, user := range users {
-		if err := user.Clean(baseScope); err != nil {
+		if err := user.Validate(); err != nil {
 			return nil, err
 		}
+		user.Init(baseScope)
 	}
 
 	return users, err
@@ -74,10 +76,11 @@ func (s *Storage) Gets(baseScope string) ([]*User, error) {
 
 // Update updates a user in the database.
 func (s *Storage) Update(user *User, fields ...string) error {
-	err := user.Clean("", fields...)
+	err := user.Validate(fields...)
 	if err != nil {
 		return err
 	}
+	user.Init("")
 
 	err = s.back.Update(user, fields...)
 	if err != nil {
@@ -92,9 +95,10 @@ func (s *Storage) Update(user *User, fields ...string) error {
 
 // Save saves the user in a storage.
 func (s *Storage) Save(user *User) error {
-	if err := user.Clean(""); err != nil {
+	if err := user.Validate(); err != nil {
 		return err
 	}
+	user.Init("")
 
 	return s.back.Save(user)
 }

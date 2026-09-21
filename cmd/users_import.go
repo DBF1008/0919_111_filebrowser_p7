@@ -40,10 +40,11 @@ list or set it to 0.`,
 		}
 
 		for _, user := range list {
-			err = user.Clean("")
+			err = user.Validate()
 			if err != nil {
 				return err
 			}
+			user.Init("")
 		}
 
 		replace, err := flags.GetBool("replace")

@@ -89,7 +89,7 @@ func handle(fn handleFunc, prefix string, store *storage.Storage, server *settin
 
 		if status != 0 {
 			txt := http.StatusText(status)
-			if status == http.StatusBadRequest && err != nil {
+			if status >= http.StatusBadRequest && status < http.StatusInternalServerError && err != nil {
 				txt += " (" + err.Error() + ")"
 			}
 			http.Error(w, strconv.Itoa(status)+" "+txt, status)

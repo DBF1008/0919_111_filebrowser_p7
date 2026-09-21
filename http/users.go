@@ -62,7 +62,7 @@ func withSelfOrAdmin(fn handleFunc) handleFunc {
 		}
 
 		if d.user.ID != id && !d.user.Perm.Admin {
-			return http.StatusForbidden, nil
+			return http.StatusForbidden, fberrors.ErrPermissionDenied
 		}
 
 		d.raw = id
@@ -144,7 +144,7 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 	}
 
 	if len(req.Which) != 0 {
-		return http.StatusBadRequest, nil
+		return http.StatusBadRequest, fberrors.ErrInvalidRequestParams
 	}
 
 	if req.Data.Password == "" {
@@ -170,7 +170,7 @@ var userPostHandler = withAdmin(func(w http.ResponseWriter, r *http.Request, d *
 
 	err = d.store.Users.Save(req.Data)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return errToStatus(err), err
 	}
 
 	w.Header().Set("Location", "/settings/users/"+strconv.FormatUint(uint64(req.Data.ID), 10))
@@ -205,7 +205,7 @@ var userPutHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request
 	}
 
 	if req.Data.ID != d.raw.(uint) {
-		return http.StatusBadRequest, nil
+		return http.StatusBadRequest, fberrors.ErrInvalidRequestParams
 	}
 
 	for _, field := range req.Which {
@@ -218,7 +218,7 @@ var userPutHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request
 
 	if len(req.Which) == 0 || (len(req.Which) == 1 && req.Which[0] == "all") {
 		if !d.user.Perm.Admin {
-			return http.StatusForbidden, nil
+			return http.StatusForbidden, fberrors.ErrPermissionDenied
 		}
 
 		if req.Data.Password != "" {
@@ -244,7 +244,7 @@ var userPutHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request
 
 		if v == "Password" {
 			if !d.user.Perm.Admin && d.user.LockPassword {
-				return http.StatusForbidden, nil
+				return http.StatusForbidden, fberrors.ErrPermissionDenied
 			}
 
 			req.Data.Password, err = users.ValidateAndHashPwd(req.Data.Password, d.settings.MinimumPasswordLength)
@@ -255,14 +255,14 @@ var userPutHandler = withSelfOrAdmin(func(w http.ResponseWriter, r *http.Request
 
 		for _, f := range NonModifiableFieldsForNonAdmin {
 			if !d.user.Perm.Admin && v == f {
-				return http.StatusForbidden, nil
+				return http.StatusForbidden, fberrors.ErrPermissionDenied
 			}
 		}
 	}
 
 	err = d.store.Users.Update(req.Data, req.Which...)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return errToStatus(err), err
 	}
 
 	return http.StatusOK, nil

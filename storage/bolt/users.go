@@ -60,18 +60,30 @@ func (st usersBackend) Update(user *users.User, fields ...string) error {
 		return st.Save(user)
 	}
 
-	for _, field := range fields {
+	values := make([]interface{}, len(fields))
+	for i, field := range fields {
 		userField := reflect.ValueOf(user).Elem().FieldByName(field)
 		if !userField.IsValid() {
 			return fmt.Errorf("invalid field: %s", field)
 		}
-		val := userField.Interface()
-		if err := st.db.UpdateField(user, field, val); err != nil {
+		values[i] = userField.Interface()
+	}
+
+	tx, err := st.db.Begin(false)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	for i, field := range fields {
+		if err := tx.UpdateField(user, field, values[i]); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func (st usersBackend) Save(user *users.User) error {

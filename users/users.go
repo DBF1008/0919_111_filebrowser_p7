@@ -54,9 +54,10 @@ var checkableFields = []string{
 	"Rules",
 }
 
-// Clean cleans up a user and verifies if all its fields
-// are alright to be saved.
-func (u *User) Clean(baseScope string, fields ...string) error {
+// Validate verifies if the user's fields are alright to be saved,
+// applying defaults to the fields that are not set. When no fields
+// are given, all checkable fields are validated.
+func (u *User) Validate(fields ...string) error {
 	if len(fields) == 0 {
 		fields = checkableFields
 	}
@@ -90,13 +91,19 @@ func (u *User) Clean(baseScope string, fields ...string) error {
 		}
 	}
 
-	if u.Fs == nil {
-		scope := u.Scope
-		scope = filepath.Join(baseScope, filepath.Join("/", scope))
-		u.Fs = afero.NewBasePathFs(afero.NewOsFs(), scope)
+	return nil
+}
+
+// Init initializes the user's filesystem based on its scope. A
+// filesystem that has been set explicitly is never overridden.
+func (u *User) Init(baseScope string) {
+	if u.Fs != nil {
+		return
 	}
 
-	return nil
+	scope := u.Scope
+	scope = filepath.Join(baseScope, filepath.Join("/", scope))
+	u.Fs = afero.NewBasePathFs(afero.NewOsFs(), scope)
 }
 
 // FullPath gets the full path for a user's relative path.
